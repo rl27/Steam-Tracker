@@ -93,8 +93,7 @@ def main():
             print(f"{'ID: ' + steamid:<{longest}}", f"{counts[steamid]/3600:<.2f}")
 
 
-    # Plot calendar heatmap (in minutes)
-
+    # Plot calendar heatmap (in hours)
     old_split = oldest_time[0].split('-')
     new_split = newest_time[0].split('-')
     old_date = old_split[1] + '/' + old_split[2] + '/' + old_split[0]
@@ -109,12 +108,11 @@ def main():
             timediff = getTimeDiff(*time0[1:], *time1[1:])            
             current = datetime.datetime.strptime(time0[1], "%Y-%m-%d").date()
             delta = (current - timestart).days
-            day_counts[delta] += timediff / 60.0
-
+            day_counts[delta] += timediff / 3600.0
 
     events = pd.Series(day_counts, index=all_days)
-    calplot.calplot(events, cmap='YlGn')
-    plt.savefig('test.png')
+    calplot.calplot(events, cmap='YlGn')#, colorbar=False)
+    plt.savefig('heatmap.png')
 
 
 if __name__ == "__main__":
