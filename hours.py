@@ -4,6 +4,8 @@ import pandas as pd
 import calplot
 import argparse
 import datetime
+import os
+import re
 from utils import pairs, getTimeDiff, getSteamAppList
 
 def main():
@@ -102,17 +104,38 @@ def main():
     all_days = pd.date_range(start=old_date, end=new_date)
     day_counts = np.zeros(len(all_days))
 
+    game_counts = {}
     timestart = datetime.datetime.strptime(oldest_time[0], "%Y-%m-%d").date()
     for steamid in apps:
+        game_counts[steamid] = np.zeros(len(all_days))
         for time0, time1 in pairs(apps[steamid]):
             timediff = getTimeDiff(*time0[1:], *time1[1:])            
             current = datetime.datetime.strptime(time0[1], "%Y-%m-%d").date()
             delta = (current - timestart).days
-            day_counts[delta] += timediff / 3600.0
+            hours = timediff / 3600.0
+            day_counts[delta] += hours
+            game_counts[steamid][delta] += hours
+
+    if not os.path.exists('plots'):
+        os.makedirs('plots')
 
     events = pd.Series(day_counts, index=all_days)
     calplot.calplot(events, cmap='YlGn')#, colorbar=False)
-    plt.savefig('heatmap.png')
+    plt.savefig('plots/heatmap.png')
+    plt.close()
+
+    for steamid in game_counts:
+        game_days = pd.date_range(start=apps[steamid][0][1], end=apps[steamid][-1][1])
+        start = (datetime.datetime.strptime(apps[steamid][0][1], "%Y-%m-%d").date() - timestart).days
+        end = (datetime.datetime.strptime(apps[steamid][-1][1], "%Y-%m-%d").date() - timestart).days
+
+        events = pd.Series(game_counts[steamid][start:end+1], index=game_days)
+        calplot.calplot(events, cmap='YlGn')
+        if steamid in names:
+            plt.savefig('plots/{}.png'.format(re.sub(r'\W+', '', names[steamid])))
+        else:
+            plt.savefig('plots/{}.png'.format(re.sub(r'\W+', '', steamid)))
+        plt.close()
 
 
 if __name__ == "__main__":
