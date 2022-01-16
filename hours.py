@@ -1,25 +1,10 @@
+import numpy as np
 import matplotlib.pyplot as plt
-import argparse
-import datetime
-import requests
 import pandas as pd
 import calplot
-import numpy as np
-
-def pairs(arr):
-    p = iter(arr)
-    return zip(p,p)
-
-def getTime(s1, s2, e1, e2):
-        date = [int(i) for i in s1.split('-')]
-        time = [int(i) for i in s2.split(':')]
-        start_dt = datetime.datetime(*date, *time)
-
-        date = [int(i) for i in e1.split('-')]
-        time = [int(i) for i in e2.split(':')]
-        end_dt = datetime.datetime(*date, *time)
-
-        return (end_dt - start_dt).total_seconds()
+import argparse
+import datetime
+from utils import pairs, getTimeDiff, getSteamAppList
 
 def main():
 
@@ -37,6 +22,8 @@ def main():
     oldest_time = -1
     newest_time = -1
     apps = {}
+
+    # Get all start and end times
     for l in f.readlines():
         if l == '\n':
             continue
@@ -57,8 +44,8 @@ def main():
                 apps[steamid] = [time]
         
         elif spl[2] == 'Exiting':
-            steamid = spl[-1]
             newest_time = (spl[0][1:], spl[1][:-1])
+            steamid = spl[-1]
             time = (1, spl[0][1:], spl[1][:-1])
             if steamid in apps:
                 apps[steamid].append(time)
@@ -68,9 +55,9 @@ def main():
 
     counts = {}  # time in seconds
 
+    # Get total hour counts
     for steamid in apps:
-        if steamid not in time:
-            counts[steamid] = 0
+        counts[steamid] = 0
 
         for time0, time1 in pairs(apps[steamid]):
             if time0[0] != 0:
@@ -78,18 +65,18 @@ def main():
             if time1[0] != 1:
                 print("Error: unexpected log entry:", *time1[1:])
 
-            counts[steamid] += getTime(*time0[1:], *time1[1:])
+            counts[steamid] += getTimeDiff(*time0[1:], *time1[1:])
 
+    # Get names from steam IDs
     names = {}
-    url = 'https://api.steampowered.com/ISteamApps/GetAppList/v0002/'
-    r = requests.get(url)
-    applist = r.json()['applist']['apps']
-    
+    applist = getSteamAppList()
+
     for app in applist:
         appid = str(app['appid'])
         if appid in apps:
             names[appid] = app['name']
 
+    # Print table of games and hours
     longest = 0
     for steamid in names:
         longest = max(longest, len(names[steamid]))
@@ -106,13 +93,28 @@ def main():
             print(f"{'ID: ' + steamid:<{longest}}", f"{counts[steamid]/3600:<.2f}")
 
 
-    # all_days = pd.date_range('1/1/2019', periods=730, freq='D')
-    # days = np.random.choice(all_days, 500)
-    # events = pd.Series(np.random.randn(len(days)), index=days)
+    # Plot calendar heatmap (in minutes)
+
+    old_split = oldest_time[0].split('-')
+    new_split = newest_time[0].split('-')
+    old_date = old_split[1] + '/' + old_split[2] + '/' + old_split[0]
+    new_date = new_split[1] + '/' + new_split[2] + '/' + new_split[0]
+
+    all_days = pd.date_range(start=old_date, end=new_date)
+    day_counts = np.zeros(len(all_days))
+
+    timestart = datetime.datetime.strptime(oldest_time[0], "%Y-%m-%d").date()
+    for steamid in apps:
+        for time0, time1 in pairs(apps[steamid]):
+            timediff = getTimeDiff(*time0[1:], *time1[1:])            
+            current = datetime.datetime.strptime(time0[1], "%Y-%m-%d").date()
+            delta = (current - timestart).days
+            day_counts[delta] += timediff / 60.0
 
 
-    # calplot.calplot(events, cmap='YlGn', colorbar=False)
-
+    events = pd.Series(day_counts, index=all_days)
+    calplot.calplot(events, cmap='YlGn')
+    plt.savefig('test.png')
 
 
 if __name__ == "__main__":
