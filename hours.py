@@ -95,16 +95,16 @@ def main():
             print(f"{'ID: ' + steamid:<{longest}}", f"{counts[steamid]/3600:<.2f}")
 
 
-    # Plot calendar heatmap (in hours)
+    # Plot calendar heatmaps (in hours)
     old_split = oldest_time[0].split('-')
     new_split = newest_time[0].split('-')
     old_date = old_split[1] + '/' + old_split[2] + '/' + old_split[0]
     new_date = new_split[1] + '/' + new_split[2] + '/' + new_split[0]
 
     all_days = pd.date_range(start=old_date, end=new_date)
-    day_counts = np.zeros(len(all_days))
+    day_counts = np.zeros(len(all_days)) # For heatmap across all games
 
-    game_counts = {}
+    game_counts = {} # For individual game heatmaps
     timestart = datetime.datetime.strptime(oldest_time[0], "%Y-%m-%d").date()
     for steamid in apps:
         game_counts[steamid] = np.zeros(len(all_days))
@@ -119,11 +119,13 @@ def main():
     if not os.path.exists('plots'):
         os.makedirs('plots')
 
+    # Plot overall heatmap
     events = pd.Series(day_counts, index=all_days)
     calplot.calplot(events, cmap='YlGn')#, colorbar=False)
     plt.savefig('plots/heatmap.png')
     plt.close()
 
+    # Plot individual heatmaps
     for steamid in game_counts:
         game_days = pd.date_range(start=apps[steamid][0][1], end=apps[steamid][-1][1])
         start = (datetime.datetime.strptime(apps[steamid][0][1], "%Y-%m-%d").date() - timestart).days
