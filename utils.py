@@ -19,6 +19,8 @@ def getTimeDiff(s1, s2, e1, e2):
 
     return (end_dt - start_dt).total_seconds()
 
+# Uses steam API. v0002 seems to be more complete than v2.
+# https://partner.steamgames.com/doc/webapi/ISteamApps#GetAppList
 def getSteamAppList():
     url = 'https://api.steampowered.com/ISteamApps/GetAppList/v0002/'
     r = requests.get(url)

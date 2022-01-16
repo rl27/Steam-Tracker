@@ -54,7 +54,8 @@ def main():
             else:
                 apps[steamid] = [time]
 
-
+    f.close()
+    
     counts = {}  # time in seconds
 
     # Get total hour counts
