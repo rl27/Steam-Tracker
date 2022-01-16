@@ -55,19 +55,17 @@ def main():
                 apps[steamid] = [time]
 
     f.close()
-    
+
     counts = {}  # time in seconds
 
     # Get total hour counts
     for steamid in apps:
         counts[steamid] = 0
-
         for time0, time1 in pairs(apps[steamid]):
             if time0[0] != 0:
                 print("Error: unexpected log entry:", *time0[1:])
             if time1[0] != 1:
                 print("Error: unexpected log entry:", *time1[1:])
-
             counts[steamid] += getTimeDiff(*time0[1:], *time1[1:])
 
     # Get names from steam IDs
@@ -86,7 +84,7 @@ def main():
     longest += 2
 
     print("\nHours are taken between {} and {}.".format(oldest_time[0], newest_time[0]))
-    print("For games listed as 'ID: ...', lookup the ID on steamdb.info.")
+    print("For games listed as 'ID: ...', you can lookup the ID on steamdb.info.")
     print(f"{'Name':<{longest}}", 'Hours')
     print('-' * (longest + 10))
     for steamid in counts:
@@ -96,7 +94,7 @@ def main():
             print(f"{'ID: ' + steamid:<{longest}}", f"{counts[steamid]/3600:<.2f}")
 
 
-    # Plot calendar heatmaps (in hours)
+    # Create calendar heatmaps (in hours)
     old_split = oldest_time[0].split('-')
     new_split = newest_time[0].split('-')
     old_date = old_split[1] + '/' + old_split[2] + '/' + old_split[0]
@@ -107,6 +105,8 @@ def main():
 
     game_counts = {} # For individual game heatmaps
     timestart = datetime.datetime.strptime(oldest_time[0], "%Y-%m-%d").date()
+
+    # NOTE: uses starting time to determine the day. Does not handle cross-day sessions.
     for steamid in apps:
         game_counts[steamid] = np.zeros(len(all_days))
         for time0, time1 in pairs(apps[steamid]):
@@ -134,7 +134,7 @@ def main():
 
         events = pd.Series(game_counts[steamid][start:end+1], index=game_days)
         calplot.calplot(events, cmap='YlGn')
-        if steamid in names:
+        if steamid in names: # Use regular expressions to strip non-alphanumeric characters
             plt.savefig('plots/{}.png'.format(re.sub(r'\W+', '', names[steamid])))
         else:
             plt.savefig('plots/{}.png'.format(re.sub(r'\W+', '', steamid)))
