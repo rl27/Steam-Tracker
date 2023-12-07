@@ -1,4 +1,7 @@
 # Steam-Tracker
+
+NOTE: This repo is outdated. Game tracking should probably be done with `console_log.txt`.
+
 Tracks and visualizes hours in Steam games.
 
 This program tracks activity using `controller_ui.txt`. On Windows machines, this can usually be found in `C:\Program Files (x86)\Steam\logs`.
